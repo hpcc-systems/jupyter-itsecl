@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "noImplicitAny": false,
+    "moduleResolution": "node",
+    "sourceMap": false
+  },
+  "include" :[
+    "lib/*.ts",
+    "bin/*.ts"
+  ],
+  "exclude": [
+    "lib/startup.ts",
+    "node_modules/",
+    "typings/"
+  ]
+}
