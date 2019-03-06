@@ -16,7 +16,7 @@ python-dev, python3.5-dev, python-pip python3-pip jupyter nodejs
 
 For example on Ubuntu 16.04 xenial
 ```sh
-sudo apt-get install -y curl git python-dev python3.5-dev python3-pip
+sudo apt-get install -y curl git python-dev python3.5-dev python-pip python3-pip
 sudo pip3 install jupyter
 sudo curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
@@ -110,6 +110,9 @@ passwd=mypassword
 default=ECL
 ```
 
+You also can add workspace directory (workspace=<full path>;) if it is not in standard space, which is the directory that Jupyter server is started.
+This only applys when you have HPCC Clienttools installed on the Jupyter server system.
+
 To display the current configuration:
 ```sh
 //CONF
@@ -130,9 +133,20 @@ To change cluster
 ```sh
 //ECL cluster=roxie;
 ...
+
 ```
+
+To allow the code re-usable
+```sh
+///<your ecl file name>
+```
+The <your ecl file name> will be saved under workspace directory.
+You can follow ECL syntax to includ or import your ECL code.
+You also can import existing code related to the workspace directory.
+
 ## Stop Jupyter Notebook
 Clt-C and type 'y'
+
 
 ## Build and Publish
 
@@ -152,3 +166,13 @@ npm publish
 
 ## ITSECL Docker Image
 For using and building ITSECL Docker Image reference docker/README.md
+
+## Troubshooting
+* ERROR message with Chrome browser
+ERROR:gpu_process_transport_factory.cc(1017)] Lost UI shared context.
+ERROR:command_buffer_proxy_impl.cc(114)] ContextResult::kFatalFailure: Shared memory handle is not valid
+
+To avoid it before start jupyter run:
+```sh
+export BROWSER=google-chrome
+```

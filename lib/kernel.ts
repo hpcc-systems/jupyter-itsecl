@@ -39,7 +39,8 @@ import path = require("path");
 import * as ts from "typescript";
 import { Logger } from "./logging";
 import { ECLExecutor } from "./eclkernel";
-let Kernel = require("jpecl-kernel");
+//let Kernel = require("jpecl-kernel");
+let Kernel = require("./jpecl-kernel");
 import vm = require("vm");
 
 interface KernelConfig {
@@ -166,7 +167,7 @@ class Configuration {
                 },
                 "banner": (
                     "ITSECL v" + itseclVersion + "\n" +
-                    "https://github.com/hpcc-systems/itsecl\n"
+                    "https://github.com/hpcc-systems/jupyter-itsecl\n"
                 ),
                 "help_links": [{
                     "text": "TypeScript Doc",
@@ -230,11 +231,11 @@ let kernel = new Kernel(config);
 
 // WORKAROUND: Fixes https://github.com/n-riesco/ijavascript/issues/97
 kernel.handlers.is_complete_request = function is_complete_request(request) {
-    request.respond(this.iopubSocket, "status", {
-        execution_state: "busy"
+    request.respond(this.iopubSocket, 'status', {
+        execution_state: 'busy'
     });
 
-    let content = {};
+    var content;
     try {
         new vm.Script(request.content.code);
         content = {
@@ -255,8 +256,8 @@ kernel.handlers.is_complete_request = function is_complete_request(request) {
         this.protocolVersion
     );
 
-    request.respond(this.iopubSocket, "status", {
-        execution_state: "idle"
+    request.respond(this.iopubSocket, 'status', {
+        execution_state: 'idle'
     });
 };
 
