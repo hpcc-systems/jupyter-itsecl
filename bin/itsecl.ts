@@ -398,7 +398,7 @@ class Main {
     }
 
     static setJupyterInfoAsync(callback?: () => void) {
-        exec("jupyter --version", function (error, stdout) {
+        exec("jupyter notebook --version", function (error, stdout) {
             if (error) {
                 Frontend.error = error;
                 Main.setIPythonInfoAsync(callback);
