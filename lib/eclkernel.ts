@@ -42,6 +42,7 @@ import { Logger } from "./logging";
 import * as util  from "util";
 import os = require("os");
 import path = require("path");
+import mkdirp = require('mkdirp');
 
 /*
 var log = (...msgs: any[]) => {
@@ -57,6 +58,9 @@ export interface HPCCConfig {
 
     // ESP port. The default is ECLWatch port 8010
     port: number;
+
+    // Secure: true for https and false for http
+    secure: boolean
 
     // HPCC cluster. The default is hthor
     cluster: string;
@@ -91,12 +95,13 @@ export interface ECLSubmitResult {
 export interface ECLSubmitError {
     ename:     string;
     evalue:    string;
-    traceback: string;
+    // traceback is an array of string
+    traceback: string[];
 }
 
 export class ECLResult  {
     mime: ECLSubmitResult = {};
-    error: ECLSubmitError = { ename: "", evalue: "", traceback: ""}
+    error: ECLSubmitError = { ename: "", evalue: "", traceback: []}
     wuid: string;
     numOfResults: number;
 
@@ -132,7 +137,7 @@ export class ECLResult  {
     setError(e: any) {
        this.error.ename =  (e && e.name) ? e.name : typeof e;
        this.error.evalue =  (e && e.message) ? e.message : util.inspect(e);
-       this.error.traceback =  (e && e.stack) ? e.stack.split("\n") : "";
+       this.error.traceback =  (e && e.stack) ? e.stack.split("\n") : [];
     }
 }
 
@@ -143,7 +148,8 @@ export class ECLResult  {
 export class ECLExecutor  {
 
      protected ip: string  = "localhost";
-     protected port: number = 8010;
+     protected port: number = 0;
+     protected secure: boolean = false;
      protected cluster: string  = "hthor";
      protected user: string = "";
      protected password: string = "";
@@ -169,6 +175,7 @@ export class ECLExecutor  {
          let hpccConfig: HPCCConfig = {
              ip:             this.ip,
              port:           this.port,
+             secure:         this.secure,
              cluster:        this.cluster,
              user:           this.user,
              password:       this.password,
@@ -182,7 +189,7 @@ export class ECLExecutor  {
      }
 
      getValue(str:string, key:string): string {
-         let re = new RegExp(key + "\s*=\s*[^;]*;", 'i');
+         let re = new RegExp(key + "\\s*=\\s*[^;]*;", 'i');
          let match = str.match(re);
          if (match != null) {
              return match[0].split('=')[1].replace(";", "").trim();
@@ -222,6 +229,9 @@ export class ECLExecutor  {
          if (str.search("port\s*=") >= 0) {
              this.port = Number(this.getValue(str, "port"));
          }
+         if (str.search("secure\s*=") >= 0) {
+             this.secure = Boolean(this.getValue(str, "secure"));
+         }
          if (str.search("cluster\s*=") >=0 ) {
              this.cluster = this.getValue(str, "cluster");
          }
@@ -234,6 +244,17 @@ export class ECLExecutor  {
          if (str.search("password\s*=") >=0) {
              this.password = this.getValue(str, "password");
          }
+     }
+
+     getESPURL(): string {
+        let espURL = (this.secure)? "https" : "http";
+        espURL = espURL + "://" + this.ip;
+        let port =  (this.secure)? 18010 : 8010;
+        if (this.port > 0) {
+           port = this.port;
+        }
+        espURL += ":" + port;
+        return espURL;
      }
 
      getConfigFromFile(file:string): void {
@@ -291,8 +312,8 @@ export class ECLExecutor  {
         this.beforeRun(base, request);
 
         if (task_type == "CONF")  {
-           let configStr = "ip="+this.ip + " port=" + this.port + " cluster=" + this.cluster +
-           " user=" + this.user + " default=" + this.defaultTask + "\n" +
+           let configStr = "ip="+this.ip + " port=" + this.port + " secure=" + this.secure + 
+           " cluster=" + this.cluster + " user=" + this.user + " default=" + this.defaultTask + "\n" +
            "eclcc: " + this.eclccPath + " workspace: " + this.workspace;
            let result = { mime: { 'text/plain': '\'Config: ' + configStr + '\'' } };
            this.onSuccess(base, request, result);
@@ -300,7 +321,7 @@ export class ECLExecutor  {
            return;
         }
 
-        let ESP_URL = "http://" + this.ip + ":" + this.port;
+        let ESP_URL = this.getESPURL();
         let executor = this;
         //Logger.log ("ESP_URL: " + ESP_URL);
         //Logger.log ("code: " + code);
@@ -320,7 +341,7 @@ export class ECLExecutor  {
      *
      */
     createWorkunit() {
-       let ESP_URL = "http://" + this.ip + ":" + this.port;
+       let ESP_URL = this.getESPURL();
        return Workunit.create({
           baseUrl: ESP_URL,
           userID: this.user,
@@ -336,19 +357,43 @@ export class ECLExecutor  {
      */
     submitJobThroughCT(base: any, request: any, task_type: string, code: string) {
         let executor = this;
-        let ESP_URL = "http://" + this.ip + ":" + this.port;
+        let ESP_URL = this.getESPURL();
         let program = "program.ecl";
+        let module =  "";
+        let save_only = false;
 
-        // To re-use the code start with "///<an existing program file name> related to workspace directory"
-        let re = new RegExp("\s*\/\/\/\s*([^\n]+)\n", 'i');
-        let match = code.match(re);
-        if (match != null) {
-            // Logger.log("match[1]: " + match[1]);
-            program = match[1].replace("/","").trim();
+        // To re-use the code start with "///<module>/<an existing program file name> related to workspace directory" 
+        let module_file = code.match(/[\s]*\/\/\/[\s]*([^\n]+)\n/i);
+        if (module_file != null) {
+            let match = module_file[1].match(/[\s]*([^\/]+)\/(.*)/i);
+            if (match != null) {
+               module = match[1].replace("/","").trim();
+               program = module + "/" + match[2].trim();
+            }
+            else 
+            {
+               program = module_file[1].replace("/","").trim();
+            }
+            
+            match =  program.match(/([^\s]+)\s+([^\s]+)/i);
+            if (match != null) {
+               program = match[1];
+               save_only = true;
+            }
+
+            Logger.log("Program: " + program);
             code = code.replace(/^\s*\/\/\/[^\n]*\n/, "");
         }
 
-        let programPath = this.workspace + program;
+        let programPath = this.workspace;
+        if (module) {
+           programPath = programPath + module;
+        }
+        mkdirp(programPath, function(err) {
+          executor.eclResult.mime = {'text/plain': "Error to create directory " + programPath};
+          executor.onError(base, request, executor.eclResult);
+        });
+        programPath = this.workspace + program;
         Logger.log ("Save " + programPath);
 
         fs.writeFile(programPath, code, (err) => {
@@ -357,6 +402,10 @@ export class ECLExecutor  {
               executor.onError(base, request, executor.eclResult);
            }
         });
+        if (save_only) {
+           //executor.afterRun(base, request);
+           return;
+        }
 
         Logger.log("Locating Client Tools." + os.EOL);
         locateClientTools(this.eclccPath, this.buildVersion, this.workspace,
@@ -411,7 +460,7 @@ export class ECLExecutor  {
     submitJobToEsp(base: any, request: any, task_type: string, code: string) {
 
        let executor = this;
-       let ESP_URL = "http://" + this.ip + ":" + this.port;
+       let ESP_URL = this.getESPURL();
        Logger.log("Submit job to ESP directly");
        Workunit.submit({ baseUrl: ESP_URL, userID: this.user, password: this.password }, this.cluster, code).then((wu) => {
           return wu.watchUntilComplete();

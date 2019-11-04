@@ -1,6 +1,6 @@
 {
   "name": "itsecl",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "ITSECL is a Typescript/ECL kernel for the Jupyter notebook (A Modified version of IJavascript module)",
   "keywords": [
     "typescript",
@@ -36,12 +36,11 @@
     "uuid": "^3.0.1"
   },
   "devDependencies": {
-    "debug": "2",
+    "debug": "latest",
     "eslint": "2",
     "jsdoc": "3",
     "mocha": "3",
     "@types/node": "latest",
-    "debug": "latest",
     "tslint": "latest"
   },
   "scripts": {

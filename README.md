@@ -100,10 +100,14 @@ The above connection parameters can be provided from a file
 ```sh
 //CONN  file=/tmp/esp.conf;
 ```
+
+To use https set "secure=true"
+
 Sample esp.conf:
 ```sh
 ip=190.29.2.11
 port=8018
+secure=false
 cluster=thor
 user=hpccuser
 passwd=mypassword
@@ -134,15 +138,32 @@ To change cluster
 //ECL cluster=roxie;
 ...
 
-```
 
 To allow the code re-usable
 ```sh
-///<your ecl file name>
+///<module>/<your ecl file name>
 ```
 The <your ecl file name> will be saved under workspace directory.
 You can follow ECL syntax to includ or import your ECL code.
 You also can import existing code related to the workspace directory.
+
+For example,
+
+Cell one
+```sh
+///Moudle1/Def1.ecl save only
+EXPORT Def1 := 10;
+```
+When click "run" it only saves the file under workspace
+
+Cell two
+```sh
+IMPORT Module1;
+Def2 := Module1.Def1 + 12;
+OUTPUT('The value is ' + Def2)
+```
+When click "run" it should display "The value is 22".
+
 
 ## Stop Jupyter Notebook
 Clt-C and type 'y'
@@ -152,9 +173,11 @@ Clt-C and type 'y'
 
 To build
 ```sh
+
 git clone https://github.com/hpcc-systems/jupyter-itsecl
 cd jupyter-itsecl
 npm install
+npm install typescript -g
 tsc
 ```
 *.js files will be generated in bin and lib direcotries.
