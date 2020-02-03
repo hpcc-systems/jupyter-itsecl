@@ -1,6 +1,6 @@
 {
   "name": "itsecl",
-  "version": "0.1.4",
+  "version": "0.4.0",
   "description": "ITSECL is a Typescript/ECL kernel for the Jupyter notebook (A Modified version of IJavascript module)",
   "keywords": [
     "typescript",
@@ -10,7 +10,7 @@
   ],
   "homepage": "https://github.com/hpcc-systems/jupyter-itsecl",
   "bugs": {
-    "url": "https://github.com/hpcc-systems/jupyter-itsecl/issues"
+    "url": "https://track.hpccsystems.com/secure/Dashboard.jspa"
   },
   "license": "BSD-3-Clause",
   "author": {
@@ -25,19 +25,22 @@
     "itseclkernel": "lib/kernel.js"
   },
   "dependencies": {
+    "jmp": "1",
+    "nel": "^1.1.0",
     "@hpcc-js/comms": "0.4.14",
     "d3-time-format": "2.1.1",
-    "jpecl-kernel": "git+https://github.com/xwang2713/jpecl-kernel.git",
     "minizlib": "^1.1.0",
     "request": ">=2.83.0",
     "tslib": "^1.9.3",
     "typescript": "latest",
-    "uuid": "^3.0.1",
-    "zeromq": "^4.6.0"
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
-    "@types/node": "latest",
     "debug": "latest",
+    "eslint": "2",
+    "jsdoc": "3",
+    "mocha": "3",
+    "@types/node": "latest",
     "tslint": "latest"
   },
   "scripts": {

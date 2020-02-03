@@ -16,7 +16,7 @@ python-dev, python3.5-dev, python-pip python3-pip jupyter nodejs
 
 For example on Ubuntu 16.04 xenial
 ```sh
-sudo apt-get install -y curl git python-dev python3.5-dev python3-pip
+sudo apt-get install -y curl git python-dev python3.5-dev python-pip python3-pip
 sudo pip3 install jupyter
 sudo curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
@@ -100,15 +100,22 @@ The above connection parameters can be provided from a file
 ```sh
 //CONN  file=/tmp/esp.conf;
 ```
+
+To use https set "secure=true"
+
 Sample esp.conf:
 ```sh
 ip=190.29.2.11
 port=8018
+secure=false
 cluster=thor
 user=hpccuser
 passwd=mypassword
 default=ECL
 ```
+
+You also can add workspace directory (workspace=<full path>;) if it is not in standard space, which is the directory that Jupyter server is started.
+This only applys when you have HPCC Clienttools installed on the Jupyter server system.
 
 To display the current configuration:
 ```sh
@@ -130,17 +137,47 @@ To change cluster
 ```sh
 //ECL cluster=roxie;
 ...
+
+
+To allow the code re-usable
+```sh
+///<module>/<your ecl file name>
 ```
+The <your ecl file name> will be saved under workspace directory.
+You can follow ECL syntax to includ or import your ECL code.
+You also can import existing code related to the workspace directory.
+
+For example,
+
+Cell one
+```sh
+///Moudle1/Def1.ecl save only
+EXPORT Def1 := 10;
+```
+When click "run" it only saves the file under workspace
+
+Cell two
+```sh
+IMPORT Module1;
+Def2 := Module1.Def1 + 12;
+OUTPUT('The value is ' + Def2)
+```
+When click "run" it should display "The value is 22".
+
+
 ## Stop Jupyter Notebook
 Clt-C and type 'y'
+
 
 ## Build and Publish
 
 To build
 ```sh
+
 git clone https://github.com/hpcc-systems/jupyter-itsecl
 cd jupyter-itsecl
 npm install
+npm install typescript -g
 tsc
 ```
 *.js files will be generated in bin and lib direcotries.
@@ -152,3 +189,13 @@ npm publish
 
 ## ITSECL Docker Image
 For using and building ITSECL Docker Image reference docker/README.md
+
+## Troubshooting
+* ERROR message with Chrome browser
+ERROR:gpu_process_transport_factory.cc(1017)] Lost UI shared context.
+ERROR:command_buffer_proxy_impl.cc(114)] ContextResult::kFatalFailure: Shared memory handle is not valid
+
+To avoid it before start jupyter run:
+```sh
+export BROWSER=google-chrome
+```
